@@ -454,6 +454,9 @@ def get_agent_class(alg):
     elif alg == "IMPALA":
         from ray.rllib.agents import impala
         return impala.ImpalaAgent
+    elif alg == "BCO":
+        from ray.rllib.agents import bco
+        return bco.BCOAgent
     elif alg == "script":
         from ray.tune import script_runner
         return script_runner.ScriptRunner
