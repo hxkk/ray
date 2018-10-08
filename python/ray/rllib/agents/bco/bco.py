@@ -13,32 +13,25 @@ from ray.rllib.utils import merge_dicts
 from ray.tune.trial import Resources
 
 from ray.rllib.agents.bco.inverse_dynamics_model import InverseDynamicsModel
+from ray.rllib.models.preprocessors import Preprocessor
+from ray.rllib.models import ModelCatalog
 
-# from ray.rllib.models.preprocessors import Preprocessor
-# from ray.rllib.models import ModelCatalog
-#
-# class MyPreprocessorClass(Preprocessor):
-#     def _init(self):
-#         self.shape = self._obs_space.shape
-#
-#     def transform(self, observation):
-#         # pelvis_tilt	pelvis_list	pelvis_rotation	pelvis_tx	pelvis_ty	pelvis_tz	hip_flexion_r
-#         # hip_adduction_r	hip_rotation_r	knee_angle_r	ankle_angle_r	hip_flexion_l
-#         # hip_adduction_l	hip_rotation_l	knee_angle_l	ankle_angle_l	lumbar_extension
-#
-#         new_opservation = [] # len(observation["joint_pos"])
-#         # print(observation["joint_pos"])
-#         for k, v in observation["joint_pos"].iteritems():
-#             print(k)
-#             print(v)
-#
-#         return new_opservation
-#
-# ModelCatalog.register_custom_preprocessor("my_prep", MyPreprocessorClass)
+class MyPreprocessorClass(Preprocessor):
+    def _init(self):
+        self.size = 175
+        self.shape = (self.size, )
+
+    def transform(self, observation):
+        observation = observation.tolist()
+        new_obs = []
+        new_obs += observation[0:33 + 1] + observation[51:116 + 1] + observation[150:215 + 1] + observation[403:411 + 1]
+        return new_obs
+
+ModelCatalog.register_custom_preprocessor("my_prep", MyPreprocessorClass)
 
 DEFAULT_CONFIG = with_common_config({
     # Number of workers (excluding master)
-    "num_workers": 1,
+    "num_workers": 0,
     # Size of rollout batch
     "batch_size": 100,
     # Max global norm for each gradient calculated by worker
@@ -51,19 +44,17 @@ DEFAULT_CONFIG = with_common_config({
     "use_gpu_for_workers": False,
     # Model and preprocessor options
     "model": {
-        # "custom_preprocessor": "my_prep",
+        "custom_preprocessor": "my_prep",
         # "custom_options": {}  # extra options to pass to your classes
     },
     # Arguments to pass to the env creator
     "env_config": {},
-    "demo_file_path": "/data/nips/demos/subject1_3_v01.xlsx",
 })
 
 class BCOAgent(Agent):
     """Behvioral cloning from observation agent.
 
     """
-
     _agent_name = "BCO"
     _default_config = DEFAULT_CONFIG
     _policy_graph = BCOPolicyGraph
@@ -116,4 +107,7 @@ class BCOAgent(Agent):
         ])
 
         env_mdoel_data = pickle.load(open(checkpoint_path + ".env_mdoel_data", "rb"))
+
         self.env_model.set_weights(env_mdoel_data)
+
+        print("\m\mhkkkkkkkk  !!!!!!!!!!!!!!!!!!! loaded ", checkpoint_path)
