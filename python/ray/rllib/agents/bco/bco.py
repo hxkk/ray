@@ -15,17 +15,14 @@ from ray.tune.trial import Resources
 from ray.rllib.agents.bco.inverse_dynamics_model import InverseDynamicsModel
 from ray.rllib.models.preprocessors import Preprocessor
 from ray.rllib.models import ModelCatalog
+from ray.rllib.agents.bco.input_filter import *
 
 class MyPreprocessorClass(Preprocessor):
     def _init(self):
-        self.size = 175
-        self.shape = (self.size, )
+        self.shape = get_obs_size()
 
     def transform(self, observation):
-        observation = observation.tolist()
-        new_obs = []
-        new_obs += observation[0:33 + 1] + observation[51:116 + 1] + observation[150:215 + 1] + observation[403:411 + 1]
-        return new_obs
+        return input_filter(observation)
 
 ModelCatalog.register_custom_preprocessor("my_prep", MyPreprocessorClass)
 
