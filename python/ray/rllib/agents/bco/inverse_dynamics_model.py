@@ -4,16 +4,18 @@ from __future__ import print_function
 
 import tensorflow as tf
 import gym
+import glob
 
 import ray
 from ray.rllib.models import ModelCatalog
 
 from ray.rllib.models.fcnet import FullyConnectedNetwork
-from ray.rllib.agents.bco.input_filter import input_filter
+from ray.rllib.agents.bco.external_data_provider import input_fn
 
 import numpy
 import pandas
 import pickle
+import os
 
 class InverseDynamicsModel(object):
     def __init__(self, env_creator, config, is_ext_train=False):
@@ -22,14 +24,12 @@ class InverseDynamicsModel(object):
         self.summarize = config.get("summarize")
         env = ModelCatalog.get_preprocessor_as_wrapper(env_creator(self.config["env_config"]), self.config["model"])
 
-        self._load_demonstration()
-
         if is_ext_train:
-            train_dataset, valid_dataset = self.load_ext_data(self.config["ext_data_path"])
+            train_dataset = input_fn(self.config["inverse_model"]["ext_train_file_path"])
+            valid_dataset = input_fn(self.config["inverse_model"]["ext_valid_file_path"])
             iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
                                                        train_dataset.output_shapes)
             next_element = iterator.get_next()
-
             self.x = next_element[0]
             self.ac = next_element[1]
 
@@ -124,15 +124,21 @@ class InverseDynamicsModel(object):
         actions = self.sess.run(self.sample, feed_dict={self.x: obs_batch})
         return actions
 
-    def _load_demonstration(self):
-        df = pandas.read_excel(self.config["invese_model"]["demo_file_path"])
-        df = df.drop(df.columns[0], axis=1)
-
-        self.demo = df.as_matrix()
-
     def _get_demo_transitions(self):
-        demo_obs_array = self.demo[:(self.demo.shape[0] - 1), :]
-        demo_new_obs_array = self.demo[1:, :]
+        demo_list = glob.glob(os.path.join(self.config["inverse_model"]["demo_dir_path"], "*.xlsx"))
+        if len(demo_list) == 0:
+            print("[env model] get demo error! there is no demo file -> %s",
+                  (self.config["inverse_model"]["demo_dir_path"]))
+        demo_file = numpy.random.choice(demo_list)
+
+        print("[env model] pick demo: %s" % (demo_file))
+
+        df = pandas.read_excel(demo_file)
+        df = df.drop(df.columns[0], axis=1)
+        demo = df.as_matrix()
+
+        demo_obs_array = demo[:(demo.shape[0] - 1), :]
+        demo_new_obs_array = demo[1:, :]
         # print("demo_obs_array", demo_obs_array.shape)
         # print("demo_obs_array", demo_obs_array)
         # print("demo_new_obs_array", demo_new_obs_array.shape)
@@ -141,7 +147,7 @@ class InverseDynamicsModel(object):
         # print(demo_transitioins.shape)
         # transition_state = numpy.stack([demo_obs_array, demo_new_obs_array], axis=2)
         # transition_state = transition_state.reshape(transition_state.shape[0], -1)
-        return demo_transitioins
+        return demo, demo_transitioins
 
     def get_weights(self):
         weights = self.variables.get_weights()
@@ -153,75 +159,30 @@ class InverseDynamicsModel(object):
     def process(self, samples):
         self.update_model(samples)
 
-        demo_transitioins = self._get_demo_transitions()
+        demo, demo_transitioins = self._get_demo_transitions()
 
         infer_actions = self.compute_actions(demo_transitioins)
 
-        new_samples = {"obs": self.demo[: (self.demo.shape[0] - 1)].tolist(), "actions": infer_actions.tolist()}
+        new_samples = {"obs": demo[: (demo.shape[0] - 1)].tolist(), "actions": infer_actions.tolist()}
         return new_samples
 
-    def load_ext_data(self, path=""):
-        def map_batch(x, y):
-            noise_propotion = 0.1
-            print('Map batch:')
-            print('x shape: %s' % str(x.shape))
-            print('y shape: %s' % str(y.shape))
-            xnoise = x * noise_propotion * tf.random_normal(shape=tf.shape(x), mean=0.0, stddev=0.2, dtype=tf.float32)
-#             ynoise = y * noise_propotion * tf.random_normal(shape=tf.shape(y), mean=0.0, stddev=0.2, dtype=tf.float32)
-            # Note: this flips ALL images left to right. Not sure this is what you want
-            # UPDATE: looks like tf documentation is wrong and you need a 3D tensor?
-            # return tf.image.flip_left_right(x), y
-#             return x + xnoise, y + ynoise
-            return x + xnoise, y
+    def save(self, path):
+        env_model_data = self.get_weights()
+        pickle.dump(env_model_data, open(path, "wb"))
 
-        BASE_PATH = "/data/nips/es_trans_data/"
+    def restore(self, path):
+        if "ext_input_path" in self.config["inverse_model"] and \
+                os.path.isfile(self.config["inverse_model"]["ext_input_path"]):
+            env_model_path = self.config["inverse_model"]["ext_input_path"]
+        else:
+            env_model_path = path
 
-        #         train_df = pandas.read_csv("/data/nips/train_list/train_201810061612.csv")
-        train_df = pandas.read_csv(self.config["invese_model"]["ext_train_file_path"])
-        train_obs_data = []
-        train_act_data = []
-        for data in train_df["name"]:
-            obs = numpy.load(BASE_PATH + data + "_obs.npy").astype(numpy.float32)
-            obs = input_filter(obs)
-            obs_t = obs[:(obs.shape[0] - 1), :]
-            obs_next_t = obs[1:, :]
-            obs_transitioins = numpy.concatenate((obs_t, obs_next_t), axis=1)
-            train_obs_data.append(obs_transitioins)
+        env_model_data = pickle.load(open(env_model_path, "rb"))
+        self.set_weights(env_model_data)
 
-            act = numpy.load(BASE_PATH + data + "_act.npy").astype(numpy.float32)
-            train_act_data.append(act)
-        train_obs_data = tf.data.Dataset.from_tensor_slices(numpy.vstack(train_obs_data))
-        train_act_data = tf.data.Dataset.from_tensor_slices(numpy.vstack(train_act_data))
-        train_dataset = tf.data.Dataset.zip((train_obs_data, train_act_data)).repeat().shuffle(500)
-        train_dataset = train_dataset.batch(500)
-        train_dataset = train_dataset.map(map_batch)
+        print("[env model] restore: %s " % (env_model_path))
 
-        #         valid_df = pandas.read_csv("/data/nips/train_list/valid_201810061612.csv")
-        valid_df = pandas.read_csv(self.config["invese_model"]["ext_valid_file_path"])
-        valid_obs_data = []
-        valid_act_data = []
-        for data in train_df["name"]:
-            obs = numpy.load(BASE_PATH + data + "_obs.npy").astype(numpy.float32)
-            obs = input_filter(obs)
-            obs_t = obs[:(obs.shape[0] - 1), :]
-            obs_next_t = obs[1:, :]
-            obs_transitioins = numpy.concatenate((obs_t, obs_next_t), axis=1)
-            valid_obs_data.append(obs_transitioins)
-
-            act = numpy.load(BASE_PATH + data + "_act.npy").astype(numpy.float32)
-            valid_act_data.append(act)
-        valid_obs_data = tf.data.Dataset.from_tensor_slices(numpy.vstack(valid_obs_data))
-        valid_act_data = tf.data.Dataset.from_tensor_slices(numpy.vstack(valid_act_data))
-        valid_dataset = tf.data.Dataset.zip((valid_obs_data, valid_act_data)).repeat().shuffle(500)
-        valid_dataset = valid_dataset.batch(500)
-        valid_dataset = valid_dataset.map(map_batch)
-
-        return train_dataset, valid_dataset
-
-    def train_ext_data(self):
-        epochs = 100
-        train_steps = 100000
-        valid_iters = 20
+    def train_ext_data(self, epochs = 100, train_steps = 100000, valid_iters = 20):
 
         self.sess.run(self.training_init_op)
         self.sess.run(self.validation_init_op)
@@ -241,10 +202,7 @@ class InverseDynamicsModel(object):
                 avg_acc += acc[0]
             print("Average validation set similarity over {} iterations is {:.2f}%".format(valid_iters,
                                                                                          (avg_acc / valid_iters) * 100))
-
-            env_mdoel_data = self.get_weights()
-            #             pickle.dump(env_mdoel_data, open("/data/nips/ckpt/env_mdoel_data_"+str(epochs), "wb"))
-            pickle.dump(env_mdoel_data, open(self.config["invese_model"]["ext_output_path"], "wb"))
+            self.save(self.config["inverse_model"]["ext_output_path"])
 
     def test_model(self):
         demo_transitioins = self._get_demo_transitions()

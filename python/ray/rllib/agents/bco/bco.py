@@ -19,7 +19,7 @@ from ray.rllib.agents.bco.input_filter import *
 
 class MyPreprocessorClass(Preprocessor):
     def _init(self):
-        self.shape = get_obs_size()
+        self.shape = (get_input_size(), )
 
     def transform(self, observation):
         return input_filter(observation)
@@ -91,8 +91,8 @@ class BCOAgent(Agent):
         extra_data = [self.local_evaluator.save(), agent_state]
         pickle.dump(extra_data, open(checkpoint_path + ".extra_data", "wb"))
 
-        env_mdoel_data = self.env_model.get_weights()
-        pickle.dump(env_mdoel_data, open(checkpoint_path + ".env_mdoel_data", "wb"))
+        self.env_model.save(checkpoint_path + ".env_model_data")
+
         return checkpoint_path
 
     def _restore(self, checkpoint_path):
@@ -103,8 +103,4 @@ class BCOAgent(Agent):
             for (a, o) in zip(self.remote_evaluators, extra_data[1])
         ])
 
-        env_mdoel_data = pickle.load(open(checkpoint_path + ".env_mdoel_data", "rb"))
-
-        self.env_model.set_weights(env_mdoel_data)
-
-        print("\m\mhkkkkkkkk  !!!!!!!!!!!!!!!!!!! loaded ", checkpoint_path)
+        self.env_model.restore(checkpoint_path + ".env_model_data")
