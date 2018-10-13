@@ -53,18 +53,24 @@ def input_filter(obs):
 
 def target_filter(obs, target="pos"):
     new_obs = None
+
+    # joint_pos = slice_point(start=0, end=15)
+    joint_pos0 = slice_point(start=0, end=7)
+    joint_pos1 = slice_point(start=9, end=12)
+    joint_pos2 = slice_point(start=14, end=15)
+    joint_vel0 = slice_point(start=17, end=24)
+    joint_vel1 = slice_point(start=26, end=29)
+    joint_vel2 = slice_point(start=31, end=32)
+    body_pos = slice_point(start=51, end=83)
+    body_vel = slice_point(start=84, end=116)
+    body_pos_rot = slice_point(start=150, end=182)
+    body_vel_rot = slice_point(start=183, end=215)
+    mass_center_pos = slice_point(start=403, end=405)
+    mass_center_vel = slice_point(start=406, end=408)
+
     # 412 -> 169
     if target == "pos":
-        #joint_pos = slice_point(start=0, end=15)
-        joint_pos0 = slice_point(start=0, end=7)
-        joint_pos1 = slice_point(start=9, end=12)
-        joint_pos2 = slice_point(start=14, end=15)
 
-        body_pos = slice_point(start = 51, end = 83)
-
-        body_pos_rot = slice_point(start=150, end=182)
-
-        mass_center_pos = slice_point(start=403, end=405)
 
         if isinstance(obs, numpy.ndarray):
             # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
@@ -94,17 +100,6 @@ def target_filter(obs, target="pos"):
                        obs[body_pos_rot.start:body_pos_rot.end + 1] + \
                        obs[mass_center_pos.start: mass_center_pos.end + 1]
     elif target == "vel":
-        # joint_vel = slice_point(start=17, end=32)
-        joint_vel0 = slice_point(start=17, end=24)
-        joint_vel1 = slice_point(start=26, end=29)
-        joint_vel2 = slice_point(start=31, end=32)
-
-        body_vel = slice_point(start = 84, end = 116)
-
-        body_vel_rot = slice_point(start=183, end=215)
-
-        mass_center_vel = slice_point(start=406, end=408)
-
         if isinstance(obs, numpy.ndarray):
             # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
             if len(obs.shape) == 2:
@@ -147,15 +142,17 @@ def target_filter(obs, target="pos"):
     return new_obs
 
 def demo_filter(obs, target="pos"):
+    joint_pos = slice_point(start=0, end=13)
+    joint_vel = slice_point(start=14, end=27)
+    body_pos = slice_point(start=28, end=60)
+    body_vel = slice_point(start=61, end=93)
+    body_pos_rot = slice_point(start=94, end=126)
+    body_vel_rot = slice_point(start=127, end=159)
+    mass_center_pos = slice_point(start=160, end=162)
+    mass_center_vel = slice_point(start=163, end=165)
+    mass_center_acc = slice_point(start=166, end=168)
+
     if target == "pos":
-        joint_pos = slice_point(start=0, end=13)
-
-        body_pos = slice_point(start=28, end=60)
-
-        body_pos_rot = slice_point(start=94, end=126)
-
-        mass_center_pos = slice_point(start=160, end=162)
-
         if isinstance(obs, numpy.ndarray):
             # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
             if len(obs.shape) == 2:
@@ -178,14 +175,6 @@ def demo_filter(obs, target="pos"):
                         obs[body_pos_rot.start:body_pos_rot.end + 1] + \
                         obs[mass_center_pos.start:mass_center_pos.end + 1]
     elif target == "vel":
-        joint_vel = slice_point(start=14, end=27)
-
-        body_vel = slice_point(start=61, end=93)
-
-        body_vel_rot = slice_point(start=127, end=159)
-
-        mass_center_vel = slice_point(start=163, end=165)
-
         if isinstance(obs, numpy.ndarray):
             if len(obs.shape) == 2:
                 new_obs = obs[:, numpy.r_[joint_vel.start:joint_vel.end + 1,
@@ -206,7 +195,6 @@ def demo_filter(obs, target="pos"):
                         obs[body_vel_rot.start:body_vel_rot.end + 1] + \
                         obs[mass_center_vel.start:mass_center_vel.end + 1]
     elif target == "acc":
-        mass_center_acc = slice_point(start=166, end=168)
         if isinstance(obs, numpy.ndarray):
             # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
             if len(obs.shape) == 2:
@@ -222,8 +210,6 @@ def demo_filter(obs, target="pos"):
 
     return new_obs
 
-
-
 def target_filter_v2(obs, target="pos"):
     new_obs = None
     # 412 -> 169
@@ -233,14 +219,32 @@ def target_filter_v2(obs, target="pos"):
     joint_pos2 = slice_point(start=9, end=9)
     joint_pos3 = slice_point(start=11, end=12)
     joint_pos4 = slice_point(start=14, end=15)
+    joint_vel0 = slice_point(start=17, end=19)
+    joint_vel1 = slice_point(start=23, end=24)
+    joint_vel2 = slice_point(start=26, end=26)
+    joint_vel3 = slice_point(start=28, end=29)
+    joint_vel4 = slice_point(start=31, end=32)
 
     body_pos = slice_point(start = 51, end = 83)
-
+    body_vel = slice_point(start=84, end=116)
     body_pos_rot = slice_point(start=150, end=182)
-
+    body_vel_rot = slice_point(start=183, end=215)
     mass_center_pos = slice_point(start=403, end=405)
+    mass_center_vel = slice_point(start=406, end=408)
+    mass_center_acc = slice_point(start=409, end=411)
+    # joint_vel = slice_point(start=17, end=32)
 
     if target == "pos":
+        # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
+        if len(obs.shape) == 2:
+            new_obs = obs[:, numpy.r_[body_pos.start:body_pos.end + 1, \
+                                 mass_center_pos.start: mass_center_pos.end + 1]]
+        elif len(obs.shape) == 1:
+            new_obs = obs[numpy.r_[body_pos.start:body_pos.end + 1, \
+                                 mass_center_pos.start: mass_center_pos.end + 1]]
+        else:
+            print("Input shape error!", obs.shape)
+    elif target == "rot":
         # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[joint_pos0.start:joint_pos0.end + 1, \
@@ -248,35 +252,17 @@ def target_filter_v2(obs, target="pos"):
                                  joint_pos2.start:joint_pos2.end + 1, \
                                  joint_pos3.start:joint_pos3.end + 1, \
                                  joint_pos4.start:joint_pos4.end + 1, \
-                                 body_pos.start:body_pos.end + 1, \
-                                 body_pos_rot.start:body_pos_rot.end + 1, \
-                                 mass_center_pos.start: mass_center_pos.end + 1]]
+                                 body_pos_rot.start:body_pos_rot.end + 1]]
         elif len(obs.shape) == 1:
             new_obs = obs[numpy.r_[joint_pos0.start:joint_pos0.end + 1, \
                                  joint_pos1.start:joint_pos1.end + 1, \
                                  joint_pos2.start:joint_pos2.end + 1, \
                                  joint_pos3.start:joint_pos3.end + 1, \
                                  joint_pos4.start:joint_pos4.end + 1, \
-                                 body_pos.start:body_pos.end + 1, \
-                                 body_pos_rot.start:body_pos_rot.end + 1, \
-                                 mass_center_pos.start: mass_center_pos.end + 1]]
+                                 body_pos_rot.start:body_pos_rot.end + 1]]
         else:
             print("Input shape error!", obs.shape)
-
     elif target == "vel":
-        # joint_vel = slice_point(start=17, end=32)
-        joint_vel0 = slice_point(start=17, end=19)
-        joint_vel1 = slice_point(start=23, end=24)
-        joint_vel2 = slice_point(start=26, end=26)
-        joint_vel3 = slice_point(start=28, end=29)
-        joint_vel4 = slice_point(start=31, end=32)
-
-        body_vel = slice_point(start = 84, end = 116)
-
-        body_vel_rot = slice_point(start=183, end=215)
-
-        mass_center_vel = slice_point(start=406, end=408)
-
         # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[joint_vel0.start:joint_vel0.end + 1, \
@@ -298,9 +284,7 @@ def target_filter_v2(obs, target="pos"):
                                  mass_center_vel.start: mass_center_vel.end + 1]]
         else:
             print("Input shape error!", obs.shape)
-
     elif target == "acc":
-        mass_center_acc = slice_point(start = 409, end = 411)
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[mass_center_acc.start:mass_center_acc.end + 1]]
         elif len(obs.shape) == 1:
@@ -308,7 +292,6 @@ def target_filter_v2(obs, target="pos"):
         else:
             print("Input shape error!", obs.shape)
     elif target == "center_pos":
-        mass_center_pos = slice_point(start=403, end=405)
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[mass_center_pos.start:mass_center_pos.end + 1]]
         elif len(obs.shape) == 1:
@@ -319,45 +302,47 @@ def target_filter_v2(obs, target="pos"):
     return new_obs
 
 def demo_filter_v2(obs, target="pos"):
+    joint_pos0 = slice_point(start=0, end=2)
+    joint_pos1 = slice_point(start=6, end=8)
+    joint_pos2 = slice_point(start=10, end=13)
+
+    joint_vel0 = slice_point(start=14, end=16)
+    joint_vel1 = slice_point(start=20, end=22)
+    joint_vel2 = slice_point(start=24, end=27)
+
+    body_pos = slice_point(start=28, end=60)
+    body_vel = slice_point(start=61, end=93)
+    body_pos_rot = slice_point(start=94, end=126)
+    body_vel_rot = slice_point(start=127, end=159)
+    mass_center_pos = slice_point(start=160, end=162)
+    mass_center_vel = slice_point(start=163, end=165)
+    mass_center_acc = slice_point(start=166, end=168)
+
     if target == "pos":
-        joint_pos0 = slice_point(start=0, end=2)
-        joint_pos1 = slice_point(start=6, end=8)
-        joint_pos2 = slice_point(start=10, end=13)
-
-        body_pos = slice_point(start=28, end=60)
-
-        body_pos_rot = slice_point(start=94, end=126)
-
-        mass_center_pos = slice_point(start=160, end=162)
-
+        # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
+        if len(obs.shape) == 2:
+            new_obs = obs[:, numpy.r_[body_pos.start:body_pos.end + 1,
+                             mass_center_pos.start:mass_center_pos.end + 1]]
+        elif len(obs.shape) == 1:
+            new_obs = obs[numpy.r_[body_pos.start:body_pos.end + 1,
+                             mass_center_pos.start:mass_center_pos.end + 1]]
+        else:
+            print("Input shape error!", obs.shape)
+    elif target == "rot":
         # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[joint_pos0.start:joint_pos0.end + 1,
                              joint_pos1.start:joint_pos1.end + 1,
                              joint_pos2.start:joint_pos2.end + 1,
-                             body_pos.start:body_pos.end + 1,
-                             body_pos_rot.start:body_pos_rot.end + 1, \
-                             mass_center_pos.start:mass_center_pos.end + 1]]
+                             body_pos_rot.start:body_pos_rot.end + 1]]
         elif len(obs.shape) == 1:
             new_obs = obs[numpy.r_[joint_pos0.start:joint_pos0.end + 1,
-                             joint_pos1.start:joint_pos1.end + 1,
-                             joint_pos2.start:joint_pos2.end + 1,
-                             body_pos.start:body_pos.end + 1,
-                             body_pos_rot.start:body_pos_rot.end + 1, \
-                             mass_center_pos.start:mass_center_pos.end + 1]]
+                          joint_pos1.start:joint_pos1.end + 1,
+                          joint_pos2.start:joint_pos2.end + 1,
+                          body_pos_rot.start:body_pos_rot.end + 1]]
         else:
             print("Input shape error!", obs.shape)
     elif target == "vel":
-        joint_vel0 = slice_point(start=14, end=16)
-        joint_vel1 = slice_point(start=20, end=22)
-        joint_vel2 = slice_point(start=24, end=27)
-
-        body_vel = slice_point(start=61, end=93)
-
-        body_vel_rot = slice_point(start=127, end=159)
-
-        mass_center_vel = slice_point(start=163, end=165)
-
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[joint_vel0.start:joint_vel0.end + 1,
                              joint_vel1.start:joint_vel1.end + 1,
@@ -375,7 +360,6 @@ def demo_filter_v2(obs, target="pos"):
         else:
             print("Input shape error!", obs.shape)
     elif target == "acc":
-        mass_center_acc = slice_point(start=166, end=168)
         # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[mass_center_acc.start:mass_center_acc.end + 1]]
@@ -384,7 +368,6 @@ def demo_filter_v2(obs, target="pos"):
         else:
             print("Input shape error!", obs.shape)
     elif target == "center_pos":
-        mass_center_pos = slice_point(start=160, end=162)
         # new_obs = obs[:, numpy.r_[0:33 + 1, 51:116 + 1, 150:215 + 1, 403:411 + 1]]
         if len(obs.shape) == 2:
             new_obs = obs[:, numpy.r_[mass_center_pos.start:mass_center_pos.end + 1]]
